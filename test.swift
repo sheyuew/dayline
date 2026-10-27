@@ -1,0 +1,22 @@
+import Foundation
+let store = LogStore(url: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString))
+try store.add("  写方案  ")
+try store.add("  ")
+assert(store.items.count == 1)
+assert(store.items[0].text == "写方案")
+let restored = LogStore(url: store.url)
+assert(restored.items.count == 1)
+print("PASS: trims input, rejects empty records, persists and restores")
+let originalID = store.items[0].id
+let revisedDate = Date(timeIntervalSince1970: 1000)
+try store.update(id: originalID, text: "  修改后的事项  ", date: revisedDate)
+assert(store.items.count == 1 && store.items[0].id == originalID)
+let updated = LogStore(url: store.url)
+assert(updated.items[0].text == "修改后的事项" && updated.items[0].date == revisedDate)
+do { try store.update(id: originalID, text: "  ", date: Date()); assertionFailure("empty edit accepted") } catch {}
+assert(store.items[0].text == "修改后的事项")
+print("PASS: editing preserves identity, persists time and text, rejects blank edits")
+try store.delete(id: originalID)
+assert(store.items.isEmpty)
+assert(LogStore(url: store.url).items.isEmpty)
+print("PASS: deletion persists")
